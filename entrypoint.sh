@@ -23,6 +23,19 @@ if [[ -f "${INPUT_PROJECTBASEDIR%/}build.gradle" ]]; then
   exit 1
 fi
 
+if [[ -n "${SONAR_ENDPOINT-}" ]]; then
+  cacertspath=${JAVA_HOME}/lib/security/cacerts
+  tmpfile="/tmp/${host}.$$.crt"
+  host=${SONAR_ENDPOINT}
+  port=443
+
+  openssl x509 -in <(openssl s_client -connect ${host}:${port} \
+    -prexit 2>/dev/null) -out ${tmpfile}
+
+    keytool -importcert -noprompt -file ${tmpfile} -alias ${host} \
+    -keystore ${cacertspath} -storepass changeit
+fi
+
 unset JAVA_HOME
 
 sonar-scanner -Dsonar.projectBaseDir=${INPUT_PROJECTBASEDIR} ${INPUT_ARGS}
